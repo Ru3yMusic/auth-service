@@ -1,0 +1,491 @@
+openapi: 3.0.3
+info:
+  title: Auth Service API
+  description: |
+    Handles user registration, email/OTP verification, login (email & Google OAuth),
+    JWT token management, and password recovery for RUBY MUSIC.
+  version: 1.0.0
+  contact:
+    name: RUBY MUSIC Team
+
+servers:
+  - url: http://localhost:8081
+    description: Local development
+  - url: http://localhost:8080/api/v1/auth
+    description: Via API Gateway
+
+tags:
+  - name: Registration
+    description: Sign-up and email verification flow
+  - name: Authentication
+    description: Login, token refresh and logout
+  - name: Password
+    description: Password recovery via OTP
+  - name: Users
+    description: User profile management
+
+paths:
+
+  # ── Registration ────────────────────────────────────────────────────────────
+
+  /api/v1/auth/register:
+    post:
+      tags: [Registration]
+      operationId: register
+      summary: Register a new user with email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created — OTP sent to email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/verify-email:
+    post:
+      tags: [Registration]
+      operationId: verifyEmail
+      summary: Verify email with 5-digit OTP (REGISTER or PASSWORD_RESET)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '204':
+          description: Email verified successfully
+        '400':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/resend-otp:
+    post:
+      tags: [Registration]
+      operationId: resendOtp
+      summary: Resend OTP to the given email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOtpRequest'
+      responses:
+        '204':
+          description: OTP sent
+        '404':
+          description: Email not registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── Authentication ───────────────────────────────────────────────────────────
+
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      operationId: login
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated — returns access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials or email not verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login/google:
+    post:
+      tags: [Authentication]
+      operationId: loginWithGoogle
+      summary: Login or register via Google OAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLoginRequest'
+      responses:
+        '200':
+          description: Authenticated — returns access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid Google token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      operationId: refreshToken
+      summary: Issue a new access token using a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Refresh token invalid, expired, or revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Authentication]
+      operationId: logout
+      summary: Revoke current refresh token (logout from this device)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Logged out
+
+  /api/v1/auth/logout-all:
+    post:
+      tags: [Authentication]
+      operationId: logoutAll
+      summary: Revoke all refresh tokens (logout from all devices)
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: All sessions revoked
+
+  # ── Password recovery ────────────────────────────────────────────────────────
+
+  /api/v1/auth/password/reset-request:
+    post:
+      tags: [Password]
+      operationId: requestPasswordReset
+      summary: Request a PASSWORD_RESET OTP by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestBody'
+      responses:
+        '204':
+          description: OTP sent (response is the same even if email is unknown)
+
+  /api/v1/auth/password/reset:
+    post:
+      tags: [Password]
+      operationId: resetPassword
+      summary: Set new password after OTP verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetBody'
+      responses:
+        '204':
+          description: Password updated — all sessions revoked
+        '400':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ── User profile ─────────────────────────────────────────────────────────────
+
+  /api/v1/auth/users/{id}:
+    get:
+      tags: [Users]
+      operationId: getUserById
+      summary: Get user profile by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/users/{id}/profile:
+    patch:
+      tags: [Users]
+      operationId: updateProfile
+      summary: Update display name and/or profile photo URL
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+# ── Components ───────────────────────────────────────────────────────────────
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName, birthDate, gender, acceptedTerms, acceptedPrivacyPolicy]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        displayName:
+          type: string
+          maxLength: 100
+        birthDate:
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        acceptedTerms:
+          type: boolean
+        acceptedPrivacyPolicy:
+          type: boolean
+        acceptsMarketing:
+          type: boolean
+          default: false
+
+    VerifyOtpRequest:
+      type: object
+      required: [email, code, type]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 5
+          maxLength: 5
+        type:
+          $ref: '#/components/schemas/VerificationType'
+
+    ResendOtpRequest:
+      type: object
+      required: [email, type]
+      properties:
+        email:
+          type: string
+          format: email
+        type:
+          $ref: '#/components/schemas/VerificationType'
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        deviceInfo:
+          type: string
+
+    GoogleLoginRequest:
+      type: object
+      required: [googleIdToken]
+      properties:
+        googleIdToken:
+          type: string
+        deviceInfo:
+          type: string
+
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    PasswordResetRequestBody:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    PasswordResetBody:
+      type: object
+      required: [email, code, newPassword]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 5
+          maxLength: 5
+        newPassword:
+          type: string
+          minLength: 8
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 100
+        profilePhotoUrl:
+          type: string
+          format: uri
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Expiration in seconds
+        refreshToken:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        authProvider:
+          $ref: '#/components/schemas/AuthProvider'
+        profilePhotoUrl:
+          type: string
+        isEmailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+
+    Gender:
+      type: string
+      enum: [FEMENINO, MASCULINO, NO_BINARIO, OTRO, PREFER_NOT_SAY]
+
+    AuthProvider:
+      type: string
+      enum: [EMAIL, GOOGLE]
+
+    VerificationType:
+      type: string
+      enum: [REGISTER, PASSWORD_RESET]
