@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -20,11 +19,6 @@ public class AuthenticationController implements AuthenticationApi {
 
     private final AuthService authService;
     private final HttpServletRequest httpRequest;
-
-    @Override
-    public Optional<HttpServletRequest> getRequest() {
-        return Optional.of(httpRequest);
-    }
 
     @Override
     public ResponseEntity<TokenResponse> login(LoginRequest body) {

@@ -1,0 +1,83 @@
+# ========================
+# Maven
+# ========================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+*.nar
+
+# ========================
+# Spring Boot
+# ========================
+*.log
+logs/
+spring.log
+
+# ========================
+# IntelliJ IDEA
+# ========================
+# Mantener modules.xml y misc.xml — necesarios para reconocimiento del proyecto
+.idea/*
+!.idea/modules.xml
+!.idea/misc.xml
+!.idea/compiler.xml
+!.idea/encodings.xml
+*.iws
+*.ipr
+out/
+
+# ========================
+# Eclipse / STS
+# ========================
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+
+# ========================
+# VS Code
+# ========================
+.vscode/
+
+# ========================
+# Secrets — JWT keys y credenciales
+# ========================
+# Nunca commitear claves RSA, passwords ni overrides locales
+*.pem
+*.key
+*.p12
+*.jks
+*.env
+.env
+.env.*
+application-local.yml
+application-local.properties
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+hs_err_pid*
+replay_pid*
+
+# ========================
+# Temporales
+# ========================
+*.tmp
+*.bak
+*.swp
+*.ctxt
+.mtj.tmp/
+*~

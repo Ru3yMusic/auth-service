@@ -422,7 +422,6 @@ components:
           maxLength: 100
         profilePhotoUrl:
           type: string
-          format: uri
 
     TokenResponse:
       type: object
