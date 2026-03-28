@@ -5,10 +5,14 @@ import com.rubymusic.auth.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
     @Mapping(target = "gender", source = "gender")
     @Mapping(target = "authProvider", source = "authProvider")
     UserResponse toDto(User user);
+
+    List<UserResponse> toDtoList(List<User> users);
 }

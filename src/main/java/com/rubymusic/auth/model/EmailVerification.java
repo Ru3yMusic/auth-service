@@ -27,7 +27,7 @@ public class EmailVerification {
     @Column(nullable = false, length = 255)
     private String email;
 
-    @Column(nullable = false, length = 5)
+    @Column(nullable = false, length = 6)
     private String code;
 
     @Enumerated(EnumType.STRING)

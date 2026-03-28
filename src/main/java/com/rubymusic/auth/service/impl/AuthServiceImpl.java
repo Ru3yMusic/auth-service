@@ -215,7 +215,8 @@ public class AuthServiceImpl implements AuthService {
                 .claims(Map.of(
                         "email", user.getEmail(),
                         "displayName", user.getDisplayName(),
-                        "profilePhotoUrl", user.getProfilePhotoUrl() != null ? user.getProfilePhotoUrl() : ""))
+                        "profilePhotoUrl", user.getProfilePhotoUrl() != null ? user.getProfilePhotoUrl() : "",
+                        "role", user.getRole().name()))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
                 .signWith(jwtPrivateKey)   // RS256 — jjwt auto-selects algorithm
@@ -223,7 +224,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void sendOtp(String email, VerificationType type) {
-        String code = String.valueOf(10000 + new SecureRandom().nextInt(90000));
+        String code = String.valueOf(100000 + new SecureRandom().nextInt(900000));
 
         EmailVerification verification = EmailVerification.builder()
                 .email(email)

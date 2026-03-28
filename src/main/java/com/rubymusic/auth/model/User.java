@@ -1,7 +1,10 @@
 package com.rubymusic.auth.model;
 
 import com.rubymusic.auth.model.enums.AuthProvider;
+import com.rubymusic.auth.model.enums.BlockReason;
 import com.rubymusic.auth.model.enums.Gender;
+import com.rubymusic.auth.model.enums.UserRole;
+import com.rubymusic.auth.model.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -58,6 +61,21 @@ public class User {
     /** URL stored in cloud storage — never binary in DB */
     @Column(name = "profile_photo_url", columnDefinition = "TEXT")
     private String profilePhotoUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private UserRole role = UserRole.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
+
+    /** Populated only when status = BLOCKED */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "block_reason", length = 35)
+    private BlockReason blockReason;
 
     @Column(name = "is_email_verified", nullable = false)
     @Builder.Default
