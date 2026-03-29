@@ -71,6 +71,10 @@
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -169,6 +173,14 @@
                             <generateModelTests>false</generateModelTests>
                             <generateApiDocumentation>false</generateApiDocumentation>
                             <generateModelDocumentation>false</generateModelDocumentation>
+                            <importMappings>
+                                <importMapping>UserStatus=com.rubymusic.auth.model.enums.UserStatus</importMapping>
+                                <importMapping>BlockReason=com.rubymusic.auth.model.enums.BlockReason</importMapping>
+                                <importMapping>Gender=com.rubymusic.auth.model.enums.Gender</importMapping>
+                                <importMapping>AuthProvider=com.rubymusic.auth.model.enums.AuthProvider</importMapping>
+                                <importMapping>VerificationType=com.rubymusic.auth.model.enums.VerificationType</importMapping>
+                                <importMapping>UserRole=com.rubymusic.auth.model.enums.UserRole</importMapping>
+                            </importMappings>
                             <configOptions>
                                 <interfaceOnly>true</interfaceOnly>
                                 <useSpringBoot3>true</useSpringBoot3>

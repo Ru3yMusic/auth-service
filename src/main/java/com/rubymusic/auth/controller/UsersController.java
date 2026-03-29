@@ -5,6 +5,7 @@ import com.rubymusic.auth.dto.ChangeUserStatusRequest;
 import com.rubymusic.auth.dto.UpdateProfileRequest;
 import com.rubymusic.auth.dto.UserPage;
 import com.rubymusic.auth.dto.UserResponse;
+import com.rubymusic.auth.dto.UserStatsResponse;
 import com.rubymusic.auth.mapper.UserMapper;
 import com.rubymusic.auth.model.enums.BlockReason;
 import com.rubymusic.auth.model.enums.UserStatus;
@@ -27,9 +28,8 @@ public class UsersController implements UsersApi {
     private final UserMapper userMapper;
 
     @Override
-    public ResponseEntity<UserPage> listUsers(String q, String status, Integer page, Integer size) {
-        UserStatus statusEnum = (status != null) ? UserStatus.valueOf(status) : null;
-        var p = userService.listUsers(q, statusEnum, PageRequest.of(page, size));
+    public ResponseEntity<UserPage> listUsers(String q, UserStatus status, Integer page, Integer size) {
+        var p = userService.listUsers(q, status, PageRequest.of(page, size));
         UserPage dto = new UserPage()
                 .content(userMapper.toDtoList(p.getContent()))
                 .totalElements((int) p.getTotalElements())
@@ -40,8 +40,14 @@ public class UsersController implements UsersApi {
     }
 
     @Override
-    public ResponseEntity<Map<String, Object>> getUserStats() {
-        return ResponseEntity.ok(userService.getStats());
+    public ResponseEntity<UserStatsResponse> getUserStats() {
+        Map<String, Object> stats = userService.getStats();
+        UserStatsResponse response = new UserStatsResponse()
+                .total((Long) stats.get("total"))
+                .byGender((Map<String, Long>) stats.get("byGender"))
+                .byStatus((Map<String, Long>) stats.get("byStatus"))
+                .recentUsers(userMapper.toDtoList((List<User>) stats.get("recentUsers")));
+        return ResponseEntity.ok(response);
     }
 
     @Override
@@ -60,7 +66,7 @@ public class UsersController implements UsersApi {
     public ResponseEntity<UserResponse> changeUserStatus(UUID id, ChangeUserStatusRequest body) {
         BlockReason reason = body.getBlockReason() != null
                 ? BlockReason.valueOf(body.getBlockReason().name()) : null;
-        User user = userService.changeStatus(id, UserStatus.valueOf(body.getStatus().name()), reason);
+        User user = userService.changeStatus(id, body.getStatus(), reason);
         return ResponseEntity.ok(userMapper.toDto(user));
     }
 

@@ -1,5 +1,6 @@
 package com.rubymusic.auth.service.impl;
 
+import com.rubymusic.auth.client.PlaylistServiceClient;
 import com.rubymusic.auth.model.EmailVerification;
 import com.rubymusic.auth.model.RefreshToken;
 import com.rubymusic.auth.model.User;
@@ -44,6 +45,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final PrivateKey jwtPrivateKey;
+    private final PlaylistServiceClient playlistServiceClient;
 
     @Value("${jwt.access-token-expiration-ms:900000}")
     private long accessTokenExpirationMs;
@@ -103,6 +105,11 @@ public class AuthServiceImpl implements AuthService {
             userRepository.findByEmail(email).ifPresent(u -> {
                 u.setIsEmailVerified(true);
                 userRepository.save(u);
+                try {
+                    playlistServiceClient.createSystemPlaylist(u.getId());
+                } catch (Exception ex) {
+                    log.warn("Could not create system playlist for user {}: {}", u.getId(), ex.getMessage());
+                }
             });
         }
     }
@@ -134,7 +141,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenPair loginWithGoogle(String googleIdToken, String deviceInfo) {
-        // Requires google-auth-library-java. Stub returns 501 via UnsupportedOperationException.
         throw new UnsupportedOperationException("Google OAuth not yet implemented");
     }
 
@@ -219,7 +225,7 @@ public class AuthServiceImpl implements AuthService {
                         "role", user.getRole().name()))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
-                .signWith(jwtPrivateKey)   // RS256 — jjwt auto-selects algorithm
+                .signWith(jwtPrivateKey)
                 .compact();
     }
 
@@ -244,7 +250,6 @@ public class AuthServiceImpl implements AuthService {
         mailSender.send(message);
     }
 
-    /** SHA-256 deterministic hash — safe to use as lookup key for refresh tokens */
     private String hashToken(String rawToken) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

@@ -55,6 +55,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User changeStatus(UUID userId, UserStatus newStatus, BlockReason blockReason) {
+        if (newStatus == UserStatus.BLOCKED && blockReason == null) {
+            throw new IllegalArgumentException("blockReason is required when status is BLOCKED");
+        }
         User user = findById(userId);
         user.setStatus(newStatus);
         user.setBlockReason(newStatus == UserStatus.BLOCKED ? blockReason : null);
@@ -79,6 +82,7 @@ public class UserServiceImpl implements UserService {
         stats.put("total", total);
         stats.put("byGender", byGender);
         stats.put("byStatus", byStatus);
+        stats.put("recentUsers", userRepository.findTop10ByOrderByCreatedAtDesc());
         return stats;
     }
 

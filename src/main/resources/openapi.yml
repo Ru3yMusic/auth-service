@@ -406,6 +406,8 @@ components:
   securitySchemes:
     bearerAuth:
       type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   parameters:
     PageParam:
@@ -580,6 +582,11 @@ components:
             type: integer
             format: int64
           description: Count per UserStatus enum value
+        recentUsers:
+          type: array
+          description: 10 most recently registered users for the dashboard widget
+          items:
+            $ref: '#/components/schemas/UserResponse'
 
     BatchUsersRequest:
       type: object
