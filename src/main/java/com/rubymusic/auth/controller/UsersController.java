@@ -5,19 +5,21 @@ import com.rubymusic.auth.dto.ChangeUserStatusRequest;
 import com.rubymusic.auth.dto.UpdateProfileRequest;
 import com.rubymusic.auth.dto.UserPage;
 import com.rubymusic.auth.dto.UserResponse;
+import com.rubymusic.auth.dto.UserStatsDto;
 import com.rubymusic.auth.dto.UserStatsResponse;
+import com.rubymusic.auth.exception.ForbiddenException;
 import com.rubymusic.auth.mapper.UserMapper;
 import com.rubymusic.auth.model.enums.BlockReason;
 import com.rubymusic.auth.model.enums.UserStatus;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -26,6 +28,7 @@ public class UsersController implements UsersApi {
 
     private final UserService userService;
     private final UserMapper userMapper;
+    private final HttpServletRequest httpRequest;
 
     @Override
     public ResponseEntity<UserPage> listUsers(String q, UserStatus status, Integer page, Integer size) {
@@ -41,12 +44,11 @@ public class UsersController implements UsersApi {
 
     @Override
     public ResponseEntity<UserStatsResponse> getUserStats() {
-        Map<String, Object> stats = userService.getStats();
+        UserStatsDto stats = userService.getStats();
         UserStatsResponse response = new UserStatsResponse()
-                .total((Long) stats.get("total"))
-                .byGender((Map<String, Long>) stats.get("byGender"))
-                .byStatus((Map<String, Long>) stats.get("byStatus"))
-                .recentUsers(userMapper.toDtoList((List<User>) stats.get("recentUsers")));
+                .total(stats.totalUsers())
+                .byGender(stats.byGender())
+                .byStatus(stats.byStatus());
         return ResponseEntity.ok(response);
     }
 
@@ -72,6 +74,10 @@ public class UsersController implements UsersApi {
 
     @Override
     public ResponseEntity<UserResponse> updateProfile(UUID id, UpdateProfileRequest body) {
+        UUID requestingUserId = UUID.fromString(httpRequest.getHeader("X-User-Id"));
+        if (!id.equals(requestingUserId)) {
+            throw new ForbiddenException("Cannot update another user's profile");
+        }
         User user = userService.updateProfile(
                 id,
                 body.getDisplayName(),

@@ -4,8 +4,10 @@ import com.rubymusic.auth.dto.GoogleLoginRequest;
 import com.rubymusic.auth.dto.LoginRequest;
 import com.rubymusic.auth.dto.RefreshTokenRequest;
 import com.rubymusic.auth.dto.TokenResponse;
-import com.rubymusic.auth.service.AuthService;
+import com.rubymusic.auth.exception.UnauthorizedException;
+import com.rubymusic.auth.service.LoginService;
 import com.rubymusic.auth.service.TokenPair;
+import com.rubymusic.auth.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +19,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthenticationController implements AuthenticationApi {
 
-    private final AuthService authService;
+    private final LoginService loginService;
+    private final TokenService tokenService;
     private final HttpServletRequest httpRequest;
 
     @Override
     public ResponseEntity<TokenResponse> login(LoginRequest body) {
-        TokenPair pair = authService.loginWithEmail(
+        TokenPair pair = loginService.login(
                 body.getEmail(),
                 body.getPassword(),
                 body.getDeviceInfo()
@@ -32,29 +35,29 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     public ResponseEntity<TokenResponse> loginWithGoogle(GoogleLoginRequest body) {
-        TokenPair pair = authService.loginWithGoogle(
-                body.getGoogleIdToken(),
-                body.getDeviceInfo()
-        );
-        return ResponseEntity.ok(toResponse(pair));
+        // Google OAuth not yet implemented — placeholder maintained from original AuthServiceImpl
+        throw new UnsupportedOperationException("Google OAuth not yet implemented");
     }
 
     @Override
     public ResponseEntity<TokenResponse> refreshToken(RefreshTokenRequest body) {
-        TokenPair pair = authService.refreshAccessToken(body.getRefreshToken());
+        TokenPair pair = tokenService.refreshAccessToken(body.getRefreshToken());
         return ResponseEntity.ok(toResponse(pair));
     }
 
     @Override
     public ResponseEntity<Void> logout(RefreshTokenRequest body) {
-        authService.logout(body.getRefreshToken());
+        tokenService.logout(body.getRefreshToken());
         return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<Void> logoutAll() {
         String userId = httpRequest.getHeader("X-User-Id");
-        authService.logoutAll(UUID.fromString(userId));
+        if (userId == null) {
+            throw new UnauthorizedException("Missing X-User-Id header");
+        }
+        tokenService.logoutAll(UUID.fromString(userId));
         return ResponseEntity.noContent().build();
     }
 

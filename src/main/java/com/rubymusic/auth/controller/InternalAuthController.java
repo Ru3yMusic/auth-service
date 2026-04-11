@@ -1,16 +1,19 @@
 package com.rubymusic.auth.controller;
 
 import com.rubymusic.auth.dto.ServiceTokenResponse;
+import com.rubymusic.auth.exception.UnauthorizedException;
 import com.rubymusic.auth.service.ServiceTokenGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 /**
  * Internal endpoint for service-to-service token exchange (zero-trust M2M).
@@ -33,9 +36,11 @@ public class InternalAuthController {
             @RequestHeader("X-Service-Name") String serviceName,
             @RequestHeader("X-Service-Secret") String serviceSecret) {
 
-        if (!internalServiceSecret.equals(serviceSecret)) {
+        if (!MessageDigest.isEqual(
+                internalServiceSecret.getBytes(StandardCharsets.UTF_8),
+                serviceSecret.getBytes(StandardCharsets.UTF_8))) {
             log.warn("Rejected service-token request from: {} (invalid secret)", serviceName);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            throw new UnauthorizedException("Invalid service secret");
         }
 
         String token = serviceTokenGenerator.generateServiceToken(serviceName);

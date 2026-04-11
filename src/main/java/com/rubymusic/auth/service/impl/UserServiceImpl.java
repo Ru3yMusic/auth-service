@@ -1,28 +1,32 @@
 package com.rubymusic.auth.service.impl;
 
+import com.rubymusic.auth.dto.UserStatsDto;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.model.enums.BlockReason;
 import com.rubymusic.auth.model.enums.UserStatus;
 import com.rubymusic.auth.repository.UserRepository;
+import com.rubymusic.auth.service.TokenService;
 import com.rubymusic.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final TokenService tokenService;   // TASK-15: needed for session revocation on block
 
     @Override
     public User findById(UUID id) {
@@ -61,11 +65,19 @@ public class UserServiceImpl implements UserService {
         User user = findById(userId);
         user.setStatus(newStatus);
         user.setBlockReason(newStatus == UserStatus.BLOCKED ? blockReason : null);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+
+        // TASK-15: immediately revoke all sessions when a user is blocked
+        if (newStatus == UserStatus.BLOCKED) {
+            tokenService.logoutAll(userId);
+            log.info("All sessions revoked for blocked user: {}", userId);
+        }
+
+        return saved;
     }
 
     @Override
-    public Map<String, Object> getStats() {
+    public UserStatsDto getStats() {
         long total = userRepository.count();
 
         Map<String, Long> byGender = new LinkedHashMap<>();
@@ -78,12 +90,11 @@ public class UserServiceImpl implements UserService {
             byStatus.put(row[0].toString(), (Long) row[1]);
         }
 
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("total", total);
-        stats.put("byGender", byGender);
-        stats.put("byStatus", byStatus);
-        stats.put("recentUsers", userRepository.findTop10ByOrderByCreatedAtDesc());
-        return stats;
+        long activeUsers = byStatus.getOrDefault("ACTIVE", 0L);
+        long blockedUsers = byStatus.getOrDefault("BLOCKED", 0L);
+
+        log.debug("Stats computed: total={}, active={}, blocked={}", total, activeUsers, blockedUsers);
+        return new UserStatsDto(total, activeUsers, blockedUsers, byGender, byStatus);
     }
 
     @Override

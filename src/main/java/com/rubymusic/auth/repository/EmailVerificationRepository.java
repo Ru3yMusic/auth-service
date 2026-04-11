@@ -19,7 +19,7 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
             String email, VerificationType type);
 
     /** Scheduled cleanup: removes expired records to keep the table lean */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM EmailVerification ev WHERE ev.expiresAt < :threshold")
     void deleteExpiredVerifications(LocalDateTime threshold);
 }

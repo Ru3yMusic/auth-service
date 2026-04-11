@@ -30,8 +30,12 @@ public class ServiceAuthFeignConfig {
 
     private String resolveToken() {
         if (cachedToken == null || System.currentTimeMillis() > tokenExpiresAt - 60_000) {
-            cachedToken = serviceTokenGenerator.generateServiceToken(serviceName);
-            tokenExpiresAt = System.currentTimeMillis() + ServiceTokenGenerator.SERVICE_TOKEN_TTL_MS;
+            synchronized (this) {
+                if (cachedToken == null || System.currentTimeMillis() > tokenExpiresAt - 60_000) {
+                    cachedToken = serviceTokenGenerator.generateServiceToken(serviceName);
+                    tokenExpiresAt = System.currentTimeMillis() + ServiceTokenGenerator.SERVICE_TOKEN_TTL_MS;
+                }
+            }
         }
         return cachedToken;
     }

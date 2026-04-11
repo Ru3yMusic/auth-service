@@ -27,7 +27,8 @@ public class EmailVerification {
     @Column(nullable = false, length = 255)
     private String email;
 
-    @Column(nullable = false, length = 6)
+    /** Stored as SHA-256 hex (64 chars) — never plaintext */
+    @Column(nullable = false, length = 64)
     private String code;
 
     @Enumerated(EnumType.STRING)
@@ -36,6 +37,16 @@ public class EmailVerification {
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
+
+    /** Number of failed verification attempts */
+    @Builder.Default
+    @Column(nullable = false)
+    private int attempts = 0;
+
+    /** Locked after MAX_ATTEMPTS failures — cannot be verified once true */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean locked = false;
 
     /** Set when the OTP is consumed */
     @Column(name = "used_at")

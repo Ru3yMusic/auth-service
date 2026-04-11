@@ -16,13 +16,13 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
     /** Bulk-revoke all active sessions for a user (logout-all / password change) */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE RefreshToken rt SET rt.revokedAt = :now " +
            "WHERE rt.user.id = :userId AND rt.revokedAt IS NULL")
     void revokeAllByUserId(UUID userId, LocalDateTime now);
 
     /** Scheduled cleanup: removes expired and revoked tokens */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM RefreshToken rt " +
            "WHERE rt.expiresAt < :threshold OR rt.revokedAt IS NOT NULL")
     void deleteExpiredAndRevoked(LocalDateTime threshold);

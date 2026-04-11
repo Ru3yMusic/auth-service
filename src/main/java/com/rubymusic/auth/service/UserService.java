@@ -1,5 +1,6 @@
 package com.rubymusic.auth.service;
 
+import com.rubymusic.auth.dto.UserStatsDto;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.model.enums.BlockReason;
 import com.rubymusic.auth.model.enums.UserStatus;
@@ -7,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public interface UserService {
@@ -41,7 +41,7 @@ public interface UserService {
      * Returns aggregate counts for the admin dashboard.
      * Keys: "total", "byGender" (map), "byStatus" (map).
      */
-    Map<String, Object> getStats();
+    UserStatsDto getStats();
 
     /**
      * Updates mutable profile fields. Null values are ignored (partial update).

@@ -25,13 +25,11 @@ spring.log
 # IntelliJ IDEA
 # ========================
 # Mantener modules.xml y misc.xml — necesarios para reconocimiento del proyecto
-.idea/*
-!.idea/modules.xml
-!.idea/misc.xml
-!.idea/compiler.xml
-!.idea/encodings.xml
+.idea/modules.xml
+.idea/misc.xml
 *.iws
 *.ipr
+.idea
 out/
 
 # ========================
@@ -42,6 +40,7 @@ out/
 .settings/
 .springBeans
 .sts4-cache/
+.factorypath
 bin/
 
 # ========================

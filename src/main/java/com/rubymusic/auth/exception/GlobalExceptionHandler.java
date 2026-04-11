@@ -20,6 +20,11 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(BaseAuthException.class)
+    public ResponseEntity<Map<String, String>> handleBaseAuthException(BaseAuthException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(
             NoSuchElementException ex, HttpServletRequest req) {
