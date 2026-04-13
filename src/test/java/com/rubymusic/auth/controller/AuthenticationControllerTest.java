@@ -1,7 +1,8 @@
 package com.rubymusic.auth.controller;
 
 import com.rubymusic.auth.exception.GlobalExceptionHandler;
-import com.rubymusic.auth.service.AuthService;
+import com.rubymusic.auth.service.LoginService;
+import com.rubymusic.auth.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthenticationControllerTest {
 
     @Mock
-    private AuthService authService;
+    private LoginService loginService;
+
+    @Mock
+    private TokenService tokenService;
 
     @Mock
     private HttpServletRequest httpRequest;

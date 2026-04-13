@@ -1,6 +1,5 @@
 package com.rubymusic.auth.service.impl;
 
-import com.rubymusic.auth.client.PlaylistServiceClient;
 import com.rubymusic.auth.exception.UserNotFoundException;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.model.enums.Gender;
@@ -31,9 +30,8 @@ class RegistrationServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private OtpService otpService;
-    @Mock private TokenService tokenService;   // injected per task spec; not used in these tests
+    @Mock private TokenService tokenService;
     @Mock private PasswordEncoder passwordEncoder;
-    @Mock private PlaylistServiceClient playlistServiceClient;
 
     @InjectMocks
     private RegistrationServiceImpl registrationService;
@@ -128,7 +126,9 @@ class RegistrationServiceTest {
     }
 
     @Test
-    void verifyEmailOtp_setsEmailVerified_andCreatesSystemPlaylist() {
+    void verifyEmailOtp_setsEmailVerified() {
+        // System playlist creation removed: playlist-service no longer has a
+        // "create system playlist" endpoint — it is created lazily on first interaction.
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .email("a@b.com")
@@ -141,7 +141,26 @@ class RegistrationServiceTest {
         verify(otpService).verify("a@b.com", "654321", VerificationType.REGISTER);
         assertThat(user.getIsEmailVerified()).isTrue();
         verify(userRepository).save(user);
-        verify(playlistServiceClient).createSystemPlaylist(user.getId());
+    }
+
+    @Test
+    void verifyEmailOtp_noExternalCallsAfterSave() {
+        // TRIANGULATE: after save there are zero interactions with any external services.
+        // The old Feign call to playlist-service is gone; system playlist creation is lazy.
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("b@b.com")
+                .isEmailVerified(false)
+                .build();
+        when(userRepository.findByEmail("b@b.com")).thenReturn(Optional.of(user));
+
+        registrationService.verifyEmailOtp("b@b.com", "111222");
+
+        // Only these collaborators should have been touched
+        verify(userRepository).findByEmail("b@b.com");
+        verify(otpService).verify("b@b.com", "111222", VerificationType.REGISTER);
+        verify(userRepository).save(user);
+        verifyNoMoreInteractions(userRepository, otpService, tokenService, passwordEncoder);
     }
 
     // ── resendOtp ─────────────────────────────────────────────────────────────

@@ -1,6 +1,5 @@
 package com.rubymusic.auth.service.impl;
 
-import com.rubymusic.auth.client.PlaylistServiceClient;
 import com.rubymusic.auth.exception.UserNotFoundException;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.model.enums.AuthProvider;
@@ -26,9 +25,8 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     private final UserRepository userRepository;
     private final OtpService otpService;
-    private final TokenService tokenService;  // injected per task spec
+    private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
-    private final PlaylistServiceClient playlistServiceClient;
 
     // ── registerWithEmail ─────────────────────────────────────────────────────
 
@@ -73,12 +71,6 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         user.setIsEmailVerified(true);
         userRepository.save(user);
-
-        try {
-            playlistServiceClient.createSystemPlaylist(user.getId());
-        } catch (Exception ex) {
-            log.warn("Could not create system playlist for user {}: {}", user.getId(), ex.getMessage());
-        }
 
         log.info("Email verified for user: {}", user.getId());
     }

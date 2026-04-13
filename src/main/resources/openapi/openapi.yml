@@ -23,6 +23,8 @@ tags:
     description: Password recovery via OTP
   - name: Users
     description: User profile management
+  - name: Internal
+    description: Internal service-to-service endpoints (not exposed publicly via gateway)
 
 paths:
 
@@ -372,6 +374,123 @@ paths:
                 items:
                   $ref: '#/components/schemas/UserResponse'
 
+  # ── Internal (service-to-service, blocked at gateway) ────────────────────────
+
+  /api/internal/v1/service-token:
+    post:
+      tags: [Internal]
+      operationId: issueServiceToken
+      summary: Issue a service JWT for M2M authentication (secret-based)
+      security:
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTokenRequest'
+      responses:
+        '200':
+          description: Service JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTokenResponse'
+        '401':
+          description: Invalid service secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/internal/v1/users/{id}:
+    get:
+      tags: [Internal]
+      operationId: getInternalUserById
+      summary: Fetch minimal user data for internal service consumption
+      security:
+        - ServiceJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInternalDto'
+        '401':
+          description: Missing or invalid service JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Token does not have SERVICE role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/internal/v1/users/batch:
+    get:
+      tags: [Internal]
+      operationId: getInternalUsersBatch
+      summary: Fetch multiple users by comma-separated UUIDs (unknown IDs silently omitted)
+      security:
+        - ServiceJwt: []
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated list of user UUIDs
+      responses:
+        '200':
+          description: List of found users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInternalDto'
+        '401':
+          description: Missing or invalid service JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Token does not have SERVICE role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/auth/users/{id}/profile:
     patch:
       tags: [Users]
@@ -408,6 +527,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    ServiceJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Service-to-service JWT (role=SERVICE, issued by auth-service)
 
   parameters:
     PageParam:
@@ -680,3 +804,41 @@ components:
     VerificationType:
       type: string
       enum: [REGISTER, PASSWORD_RESET]
+
+    ServiceTokenRequest:
+      type: object
+      required: [serviceName, serviceSecret]
+      properties:
+        serviceName:
+          type: string
+          description: Unique service identifier (e.g. interaction-service)
+        serviceSecret:
+          type: string
+          description: Shared secret distributed via config-server
+
+    ServiceTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Signed RS256 JWT with role=SERVICE
+        expiresIn:
+          type: integer
+          description: Token validity in seconds
+
+    UserInternalDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        username:
+          type: string
+          description: User display name (mapped from displayName)
+        profilePhotoUrl:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, BLOCKED]

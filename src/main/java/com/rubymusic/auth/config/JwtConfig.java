@@ -1,5 +1,6 @@
 package com.rubymusic.auth.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,12 +32,14 @@ import java.util.Base64;
 public class JwtConfig {
 
     @Bean
+    @ConditionalOnMissingBean(PrivateKey.class)
     public PrivateKey jwtPrivateKey(JwtProperties props) throws Exception {
         byte[] decoded = Base64.getDecoder().decode(stripPem(props.getPrivateKey()));
         return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decoded));
     }
 
     @Bean
+    @ConditionalOnMissingBean(PublicKey.class)
     public PublicKey jwtPublicKey(JwtProperties props) throws Exception {
         byte[] decoded = Base64.getDecoder().decode(stripPem(props.getPublicKey()));
         return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));

@@ -1,0 +1,24 @@
+internal:
+  service-secret: test-service-secret
+
+spring:
+  config:
+    import: ""   # disable config-server in tests
+  main:
+    allow-bean-definition-overriding: true   # lets TestKeyConfig override JwtConfig's @ConditionalOnMissingBean key beans
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  mail:
+    host: localhost   # activates JavaMailSenderAutoConfiguration so the bean exists; no real server needed for contextLoads
+    port: 25
+
+eureka:
+  client:
+    enabled: false   # no registration attempt during tests

@@ -1,19 +1,20 @@
 package com.rubymusic.auth.config;
 
 import com.rubymusic.auth.service.ServiceTokenGenerator;
-import feign.RequestInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 
 /**
- * Per-client Feign configuration that injects a service JWT into every outgoing request.
- * auth-service generates tokens locally (it holds the RSA private key) — no external call needed.
+ * Caches the service JWT used by auth-service when calling playlist-service.
  *
- * Not annotated with @Configuration — registered only for specific Feign clients.
+ * <p>Auth-service generates tokens locally (it holds the RSA private key) —
+ * no external auth-service call needed. Token is refreshed automatically
+ * 1 minute before expiry using double-checked locking on volatile fields.
  */
+@Component
 @RequiredArgsConstructor
-public class ServiceAuthFeignConfig {
+public class PlaylistServiceTokenCache {
 
     private final ServiceTokenGenerator serviceTokenGenerator;
 
@@ -23,12 +24,7 @@ public class ServiceAuthFeignConfig {
     private volatile String cachedToken;
     private volatile long tokenExpiresAt;
 
-    @Bean
-    public RequestInterceptor serviceAuthInterceptor() {
-        return template -> template.header("Authorization", "Bearer " + resolveToken());
-    }
-
-    private String resolveToken() {
+    public String getToken() {
         if (cachedToken == null || System.currentTimeMillis() > tokenExpiresAt - 60_000) {
             synchronized (this) {
                 if (cachedToken == null || System.currentTimeMillis() > tokenExpiresAt - 60_000) {

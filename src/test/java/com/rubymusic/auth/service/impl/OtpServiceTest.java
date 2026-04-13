@@ -5,17 +5,23 @@ import com.rubymusic.auth.exception.RateLimitExceededException;
 import com.rubymusic.auth.model.EmailVerification;
 import com.rubymusic.auth.model.enums.VerificationType;
 import com.rubymusic.auth.repository.EmailVerificationRepository;
+import com.rubymusic.auth.service.RateLimitService;
 import com.rubymusic.auth.util.HashUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -33,13 +39,37 @@ class OtpServiceTest {
     @Mock
     private JavaMailSender mailSender;
 
+    @Mock
+    private RateLimitService rateLimitService;
+
+    /**
+     * SyncTaskExecutor runs submitted runnables on the calling thread immediately,
+     * so afterCommit() callbacks fire synchronously during simulateCommit().
+     */
+    @Spy
+    private TaskExecutor taskExecutor = new SyncTaskExecutor();
+
     @InjectMocks
     private OtpServiceImpl otpService;
 
     @BeforeEach
     void setUp() {
+        // OtpServiceImpl registers a TransactionSynchronization inside generateAndSend.
+        // Without an active synchronization context the call throws IllegalStateException.
+        TransactionSynchronizationManager.initSynchronization();
         ReflectionTestUtils.setField(otpService, "otpExpirationMinutes", 10);
         ReflectionTestUtils.setField(otpService, "mailFrom", "noreply@rubymusic.com");
+    }
+
+    @AfterEach
+    void tearDown() {
+        TransactionSynchronizationManager.clearSynchronization();
+    }
+
+    /** Simulates a transaction commit: fires afterCommit() on all registered synchronizations. */
+    private void simulateCommit() {
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(s -> s.afterCommit());
     }
 
     // ── generateAndSend ───────────────────────────────────────────────────────
@@ -51,6 +81,7 @@ class OtpServiceTest {
 
         // WHEN
         otpService.generateAndSend("user@example.com", VerificationType.REGISTER);
+        simulateCommit(); // triggers afterCommit() → TaskExecutor runs the mail dispatch
 
         // THEN: stored code must be 64-char SHA-256 hex, not a 6-digit plaintext OTP
         ArgumentCaptor<EmailVerification> captor = ArgumentCaptor.forClass(EmailVerification.class);
@@ -68,6 +99,7 @@ class OtpServiceTest {
 
         // WHEN
         otpService.generateAndSend("user@example.com", VerificationType.REGISTER);
+        simulateCommit(); // triggers afterCommit() → SyncTaskExecutor runs mailSender.send() inline
 
         // THEN: exactly one email dispatched
         verify(mailSender).send(any(SimpleMailMessage.class));

@@ -49,7 +49,7 @@ class TokenServiceTest {
                 .email("user@example.com")
                 .displayName("Test User")
                 .birthDate(LocalDate.of(1990, 1, 1))
-                .gender(Gender.MALE)
+                .gender(Gender.MASCULINO)
                 .role(UserRole.USER)
                 .status(UserStatus.ACTIVE)
                 .authProvider(AuthProvider.EMAIL)
