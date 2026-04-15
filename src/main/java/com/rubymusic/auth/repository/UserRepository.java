@@ -22,13 +22,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
-    /** Admin user list — filterable by search query and/or status */
-    // CAST(:q AS string) forces Hibernate to bind the parameter as VARCHAR instead of
-    // bytea — without it, PostgreSQL receives lower(bytea) when q is null and throws
-    // "function lower(bytea) does not exist"
+    /** Admin user list — filterable by search query and/or status.
+     *
+     * The caller MUST pass "" (empty string) when there is no search term — never null.
+     * Reason: PostgreSQL resolves the type of a '?' placeholder from its FIRST usage in
+     * the prepared statement. With '? IS NULL', the first binding is untyped, and the
+     * engine later infers bytea from the '%'||?||'%' concatenation context, producing
+     * "function lower(bytea) does not exist". Using ':q = ''' as the guard forces
+     * PostgreSQL to see the parameter compared against a string literal on first
+     * encounter, so it consistently infers VARCHAR for all subsequent bindings too.
+     */
     @Query("SELECT u FROM User u WHERE " +
-           "(:q IS NULL OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')) " +
-           "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))) " +
+           "(:q = '' OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))) " +
            "AND (:status IS NULL OR u.status = :status) " +
            "ORDER BY u.createdAt DESC")
     Page<User> findByFilters(@Param("q") String q,

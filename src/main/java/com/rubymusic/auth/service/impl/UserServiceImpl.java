@@ -47,7 +47,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Page<User> listUsers(String q, UserStatus status, Pageable pageable) {
-        String queryParam = (q != null && q.isBlank()) ? null : q;
+        // Never pass null to the repo — the IS NULL check on a null-typed binding causes
+        // PostgreSQL to infer bytea and throw "function lower(bytea) does not exist".
+        // Empty string is the sentinel for "no filter"; the query checks (:q = '') instead.
+        String queryParam = (q == null || q.isBlank()) ? "" : q;
         return userRepository.findByFilters(queryParam, status, pageable);
     }
 
