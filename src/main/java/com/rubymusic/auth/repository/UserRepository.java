@@ -23,9 +23,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     /** Admin user list — filterable by search query and/or status */
+    // CAST(:q AS string) forces Hibernate to bind the parameter as VARCHAR instead of
+    // bytea — without it, PostgreSQL receives lower(bytea) when q is null and throws
+    // "function lower(bytea) does not exist"
     @Query("SELECT u FROM User u WHERE " +
-           "(:q IS NULL OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', :q, '%')) " +
-           "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+           "(:q IS NULL OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')) " +
+           "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))) " +
            "AND (:status IS NULL OR u.status = :status) " +
            "ORDER BY u.createdAt DESC")
     Page<User> findByFilters(@Param("q") String q,
