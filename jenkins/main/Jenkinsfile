@@ -41,8 +41,7 @@ pipeline {
             """
           }
           timeout(time: 10, unit: 'MINUTES') {
-            def qualityGate = waitForQualityGate abortPipeline: false
-            echo "Quality gate status: ${qualityGate.status} (non-blocking)"
+            waitForQualityGate abortPipeline: true
           }
         }
       }
