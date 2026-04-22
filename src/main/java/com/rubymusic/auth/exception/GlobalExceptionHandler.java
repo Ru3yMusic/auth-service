@@ -25,6 +25,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(Map.of("error", ex.getMessage()));
     }
 
+    /**
+     * Dedicated handler for blocked-account login attempts: the response body
+     * carries both `message` and `blockReason` so the frontend welcome modal
+     * can display the real motive chosen by the admin.
+     */
+    @ExceptionHandler(AccountBlockedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountBlocked(AccountBlockedException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("message", ex.getMessage());
+        body.put("blockReason", ex.getBlockReason() != null ? ex.getBlockReason().name() : null);
+        return ResponseEntity.status(ex.getStatus()).body(body);
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(
             NoSuchElementException ex, HttpServletRequest req) {

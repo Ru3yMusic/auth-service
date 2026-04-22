@@ -49,6 +49,7 @@ public class RegistrationServiceImpl implements RegistrationService {
                 .acceptedTerms(acceptedTerms)
                 .acceptedPrivacyPolicy(acceptedPrivacyPolicy)
                 .acceptsMarketing(acceptsMarketing)   // BUG-06 fix: was silently ignored before
+                .isEmailVerified(true)                // temporal: permite auto-login tras register
                 .build();
 
         user = userRepository.save(user);

@@ -52,7 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/internal/v1/auth/service-token",
-                                "/api/v1/auth/internal/service-token"
+                                "/api/v1/auth/internal/service-token",
+                                "/api/internal/v1/service-token"
                         ).permitAll()
 
                         // All other internal paths require a service JWT

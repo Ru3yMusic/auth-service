@@ -1,8 +1,10 @@
 package com.rubymusic.auth.service.impl;
 
+import com.rubymusic.auth.exception.AccountBlockedException;
 import com.rubymusic.auth.exception.EmailNotVerifiedException;
 import com.rubymusic.auth.exception.InvalidCredentialsException;
 import com.rubymusic.auth.model.User;
+import com.rubymusic.auth.model.enums.UserStatus;
 import com.rubymusic.auth.repository.UserRepository;
 import com.rubymusic.auth.service.LoginService;
 import com.rubymusic.auth.service.TokenPair;
@@ -34,6 +36,12 @@ public class LoginServiceImpl implements LoginService {
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new InvalidCredentialsException("Invalid credentials");
+        }
+
+        // Check AFTER credentials: this avoids leaking whether a given email
+        // corresponds to a blocked account to unauthenticated callers.
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new AccountBlockedException("Account is blocked", user.getBlockReason());
         }
 
         TokenPair pair = tokenService.issueTokenPair(user, deviceInfo);

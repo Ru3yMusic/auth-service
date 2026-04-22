@@ -8,6 +8,7 @@ import com.rubymusic.auth.dto.UserResponse;
 import com.rubymusic.auth.dto.UserStatsDto;
 import com.rubymusic.auth.dto.UserStatsResponse;
 import com.rubymusic.auth.exception.ForbiddenException;
+import com.rubymusic.auth.exception.UnauthorizedException;
 import com.rubymusic.auth.mapper.UserMapper;
 import com.rubymusic.auth.model.enums.BlockReason;
 import com.rubymusic.auth.model.enums.UserStatus;
@@ -17,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -74,7 +77,7 @@ public class UsersController implements UsersApi {
 
     @Override
     public ResponseEntity<UserResponse> updateProfile(UUID id, UpdateProfileRequest body) {
-        UUID requestingUserId = UUID.fromString(httpRequest.getHeader("X-User-Id"));
+        UUID requestingUserId = resolveRequestingUserId();
         if (!id.equals(requestingUserId)) {
             throw new ForbiddenException("Cannot update another user's profile");
         }
@@ -84,5 +87,31 @@ public class UsersController implements UsersApi {
                 body.getProfilePhotoUrl()
         );
         return ResponseEntity.ok(userMapper.toDto(user));
+    }
+
+    /**
+     * Resolves the authenticated user ID.
+     * Prefers the SecurityContext populated by {@code InternalJwtAuthFilter}
+     * (auth-service always validates the user JWT itself). Falls back to the
+     * {@code X-User-Id} header for requests coming through routes that do
+     * inject it. Returns 401 when neither is present or parseable.
+     */
+    private UUID resolveRequestingUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String principal = auth != null && auth.isAuthenticated() ? auth.getName() : null;
+
+        if (principal == null || principal.isBlank() || "anonymousUser".equals(principal)) {
+            principal = httpRequest.getHeader("X-User-Id");
+        }
+
+        if (principal == null || principal.isBlank()) {
+            throw new UnauthorizedException("Missing authenticated user");
+        }
+
+        try {
+            return UUID.fromString(principal);
+        } catch (IllegalArgumentException e) {
+            throw new UnauthorizedException("Invalid authenticated user identifier");
+        }
     }
 }
