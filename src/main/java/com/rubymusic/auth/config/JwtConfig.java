@@ -17,11 +17,11 @@ import java.util.Base64;
  *
  * <p>Set environment variables before running:
  * <pre>
- *   # Generate key pair (run once):
+ *   # Generates key pair (run once):
  *   openssl genrsa -out private.pem 2048
  *   openssl pkcs8 -topk8 -nocrypt -in private.pem -out private-pkcs8.pem
  *   openssl rsa  -in private.pem -pubout -out public.pem
- *
+ *   rsa verification
  *   # Export as Base64 (strip PEM headers):
  *   export JWT_PRIVATE_KEY=$(grep -v "PRIVATE" private-pkcs8.pem | tr -d '\n')
  *   export JWT_PUBLIC_KEY=$(grep  -v "PUBLIC"  public.pem       | tr -d '\n')

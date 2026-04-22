@@ -35,7 +35,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     public ResponseEntity<TokenResponse> loginWithGoogle(GoogleLoginRequest body) {
-        // Google OAuth not yet implemented — placeholder maintained from original AuthServiceImpl
+        // Google OAuth not yet implemented — placeholder maintained from original AuthServiceImpl gg
         throw new UnsupportedOperationException("Google OAuth not yet implemented");
     }
 
