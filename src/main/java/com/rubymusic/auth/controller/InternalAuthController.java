@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({"/api/v1/auth/internal", "/api/internal/v1/auth"})
+@RequestMapping({"/api/v1/auth/internal", "/api/internal/v1/auth", "/api/internal/v1"})
 public class InternalAuthController {
 
     private final ServiceTokenGenerator serviceTokenGenerator;

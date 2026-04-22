@@ -39,12 +39,14 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public String generateAccessToken(User user) {
+        // profilePhotoUrl NO se incluye como claim: puede ser un data URL grande
+        // (ver updateProfile) y volvía el JWT > 200KB, rompiendo los límites de
+        // header (HTTP 431). El avatar se consulta vía /api/v1/auth/users/{id}.
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .claims(Map.of(
                         "email", user.getEmail(),
                         "displayName", user.getDisplayName(),
-                        "profilePhotoUrl", user.getProfilePhotoUrl() != null ? user.getProfilePhotoUrl() : "",
                         "role", user.getRole().name()))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
