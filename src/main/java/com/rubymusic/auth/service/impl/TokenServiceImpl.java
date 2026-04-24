@@ -29,7 +29,7 @@ public class TokenServiceImpl implements TokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PrivateKey jwtPrivateKey;
 
-    @Value("${jwt.access-token-expiration-ms:900000}")
+    @Value("${jwt.access-token-expiration-ms:3600000}")
     private long accessTokenExpirationMs;
 
     @Value("${jwt.refresh-token-expiration-days:30}")
