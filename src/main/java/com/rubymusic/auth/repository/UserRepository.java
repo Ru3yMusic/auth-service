@@ -1,6 +1,7 @@
 package com.rubymusic.auth.repository;
 
 import com.rubymusic.auth.model.User;
+import com.rubymusic.auth.model.enums.UserRole;
 import com.rubymusic.auth.model.enums.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
-    /** Admin user list — filterable by search query and/or status.
+    /** Admin user list (regular app users only) — filterable by search query and/or status.
      *
      * The caller MUST pass "" (empty string) when there is no search term — never null.
      * Reason: PostgreSQL resolves the type of a '?' placeholder from its FIRST usage in
@@ -33,12 +34,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * encounter, so it consistently infers VARCHAR for all subsequent bindings too.
      */
     @Query("SELECT u FROM User u WHERE " +
-           "(:q = '' OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', :q, '%')) " +
-           "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))) " +
-           "AND (:status IS NULL OR u.status = :status) " +
-           "ORDER BY u.createdAt DESC")
+            "u.role = :role " +
+            "AND (:q = '' OR LOWER(u.displayName) LIKE LOWER(CONCAT('%', :q, '%')) " +
+            "  OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))) " +
+            "AND (:status IS NULL OR u.status = :status) " +
+            "ORDER BY u.createdAt DESC")
     Page<User> findByFilters(@Param("q") String q,
                              @Param("status") UserStatus status,
+                             @Param("role") UserRole role,
                              Pageable pageable);
 
     /** For dashboard: count users per gender */

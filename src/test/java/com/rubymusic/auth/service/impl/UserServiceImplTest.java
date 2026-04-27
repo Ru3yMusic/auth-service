@@ -3,6 +3,7 @@ package com.rubymusic.auth.service.impl;
 import com.rubymusic.auth.dto.UserStatsDto;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.model.enums.BlockReason;
+import com.rubymusic.auth.model.enums.UserRole;
 import com.rubymusic.auth.model.enums.UserStatus;
 import com.rubymusic.auth.repository.UserRepository;
 import com.rubymusic.auth.service.TokenService;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +33,17 @@ class UserServiceImplTest {
 
     @InjectMocks
     private UserServiceImpl userService;
+
+    @Test
+    void listUsers_withNullQuery_normalizesToEmptyString() {
+        var pageable = PageRequest.of(0, 20);
+        when(userRepository.findByFilters("", UserStatus.ACTIVE, UserRole.USER, pageable))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        userService.listUsers(null, UserStatus.ACTIVE, pageable);
+
+        verify(userRepository).findByFilters("", UserStatus.ACTIVE, UserRole.USER, pageable);
+    }
 
     // ── getStats ──────────────────────────────────────────────────────────────
 

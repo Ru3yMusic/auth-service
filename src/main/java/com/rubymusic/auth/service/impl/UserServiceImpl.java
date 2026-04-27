@@ -3,6 +3,7 @@ package com.rubymusic.auth.service.impl;
 import com.rubymusic.auth.dto.UserStatsDto;
 import com.rubymusic.auth.model.User;
 import com.rubymusic.auth.model.enums.BlockReason;
+import com.rubymusic.auth.model.enums.UserRole;
 import com.rubymusic.auth.model.enums.UserStatus;
 import com.rubymusic.auth.repository.UserRepository;
 import com.rubymusic.auth.service.TokenService;
@@ -51,7 +52,7 @@ public class UserServiceImpl implements UserService {
         // PostgreSQL to infer bytea and throw "function lower(bytea) does not exist".
         // Empty string is the sentinel for "no filter"; the query checks (:q = '') instead.
         String queryParam = (q == null || q.isBlank()) ? "" : q;
-        return userRepository.findByFilters(queryParam, status, pageable);
+        return userRepository.findByFilters(queryParam, status, UserRole.USER, pageable);
     }
 
     @Override
