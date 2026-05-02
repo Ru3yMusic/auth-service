@@ -13,6 +13,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -165,7 +168,7 @@ class UsersControllerTest {
     void changeUserStatus_block_withReason_returns200() throws Exception {
         UUID userId = UUID.randomUUID();
         User user = mock(User.class);
-        when(userService.changeStatus(eq(userId), eq(UserStatus.BLOCKED), eq(BlockReason.HARASSMENT_OR_BULLYING)))
+        when(userService.changeStatus(userId, UserStatus.BLOCKED, BlockReason.HARASSMENT_OR_BULLYING))
                 .thenReturn(user);
         when(userMapper.toDto(user)).thenReturn(new UserResponse());
 
@@ -181,7 +184,7 @@ class UsersControllerTest {
     void changeUserStatus_unblock_noReason_returns200() throws Exception {
         UUID userId = UUID.randomUUID();
         User user = mock(User.class);
-        when(userService.changeStatus(eq(userId), eq(UserStatus.ACTIVE), eq(null)))
+        when(userService.changeStatus(userId, UserStatus.ACTIVE, null))
                 .thenReturn(user);
         when(userMapper.toDto(user)).thenReturn(new UserResponse());
 
@@ -263,32 +266,12 @@ class UsersControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void updateProfile_noPrincipalNoHeader_returns401() throws Exception {
+    @ParameterizedTest(name = "header=[{0}] returns 401")
+    @NullSource
+    @ValueSource(strings = {"   ", "not-a-uuid"})
+    void updateProfile_invalidPrincipal_returns401(String headerValue) throws Exception {
         UUID pathId = UUID.randomUUID();
-        when(httpRequest.getHeader("X-User-Id")).thenReturn(null);
-
-        mockMvc.perform(patch("/api/v1/auth/users/{id}/profile", pathId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"displayName\":\"Test Name\"}"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void updateProfile_blankHeader_returns401() throws Exception {
-        UUID pathId = UUID.randomUUID();
-        when(httpRequest.getHeader("X-User-Id")).thenReturn("   ");
-
-        mockMvc.perform(patch("/api/v1/auth/users/{id}/profile", pathId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"displayName\":\"Test Name\"}"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void updateProfile_invalidUuidHeader_returns401() throws Exception {
-        UUID pathId = UUID.randomUUID();
-        when(httpRequest.getHeader("X-User-Id")).thenReturn("not-a-uuid");
+        when(httpRequest.getHeader("X-User-Id")).thenReturn(headerValue);
 
         mockMvc.perform(patch("/api/v1/auth/users/{id}/profile", pathId)
                         .contentType(MediaType.APPLICATION_JSON)

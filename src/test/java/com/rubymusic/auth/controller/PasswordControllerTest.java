@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -70,7 +69,7 @@ class PasswordControllerTest {
     @Test
     void resetPassword_validRequest_returns204() throws Exception {
         doNothing().when(passwordResetService)
-                .resetPassword(eq("a@b.com"), eq("123456"), eq("NewPass1!"));
+                .resetPassword("a@b.com", "123456", "NewPass1!");
 
         mockMvc.perform(post("/api/v1/auth/password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,7 +83,7 @@ class PasswordControllerTest {
     void resetPassword_invalidOtp_returns400() throws Exception {
         doThrow(new InvalidOtpException("Invalid OTP"))
                 .when(passwordResetService)
-                .resetPassword(eq("a@b.com"), eq("999999"), eq("NewPass1!"));
+                .resetPassword("a@b.com", "999999", "NewPass1!");
 
         mockMvc.perform(post("/api/v1/auth/password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -96,13 +95,13 @@ class PasswordControllerTest {
     void resetPassword_unknownEmail_returns404() throws Exception {
         doThrow(new UserNotFoundException("User not found"))
                 .when(passwordResetService)
-                .resetPassword(eq("nobody@b.com"), eq("123456"), eq("NewPass1!"));
+                .resetPassword("nobody@b.com", "123456", "NewPass1!");
 
         mockMvc.perform(post("/api/v1/auth/password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"nobody@b.com\",\"code\":\"123456\",\"newPassword\":\"NewPass1!\"}"))
                 .andExpect(status().isNotFound());
 
-        verify(passwordResetService, never()).resetPassword(eq("a@b.com"), eq("123456"), eq("NewPass1!"));
+        verify(passwordResetService, never()).resetPassword("a@b.com", "123456", "NewPass1!");
     }
 }
